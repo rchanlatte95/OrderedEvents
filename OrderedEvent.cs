@@ -5,85 +5,69 @@ using System.Collections.Generic;
 public class OrderedEvent
 {
     public bool orderDirty = false; // Sort when it's time to invoke functions.
-    public int reservedActCt = 0; // Number of actions to be executed during event.
-    public bool ListeningToUE = false; // Listening to a UnityEvent
-    public bool canAddActions { get => reservedActCt < Acts.Length; }
-
-    public OrderedAction[] Acts;
+    public bool ListeningToEventHandler = false;
+    public List<OrderedAction> Acts = new List<OrderedAction>();
 
     public void InvokeMethods()
     {
         if (orderDirty)
         {
-            Array.Sort(Acts);
+            Acts.Sort();
             orderDirty = false;
         }
 
-        int len = System.Math.Min(Acts.Length, reservedActCt);
-        for (int i = 0; i < len; ++i) { Acts[i].act.Invoke(); }
+        int len = Acts.Count;
+        for (int i = 0; i < len; ++i) { Acts[i]?.act(); }
+    }
+
+    public void Push(OrderedAction Act)
+    {
+        if (Act == null)
+        {
+            throw new ArgumentException("Function passed cannot be null!", nameof(Act));
+        }
+        orderDirty = Act.exeOrder != int.MaxValue;
     }
 
     // Pushes action onto the top of the invocation list.
-    public void Push(Action a)
+    public void Push(Action Act, int exeOrder = int.MaxValue)
     {
-        if (canAddActions)
+        if (Act == null)
         {
-            if (reservedActCt < 1)
-            {
-                Acts[0].act = a;
-                Acts[0].exeOrder = int.MaxValue;
-            }
-            else if (reservedActCt == 1)
-            {
-                Acts[1].act = Acts[0].act;
-                Acts[1].exeOrder = Acts[0].exeOrder;
-
-                Acts[0].act = a;
-                Acts[0].exeOrder = int.MaxValue;
-            }
-            else
-            {
-                // shift elements down one
-                int i = reservedActCt;
-                for (; i > 0; --i)
-                {
-                    // Cannot do a naive class copy since C# will bungle up
-                    // the pointer indirection and cause duplicates.
-                    Acts[i].act = Acts[i - 1].act;
-                    Acts[i].exeOrder = Acts[i - 1].exeOrder;
-                }
-
-                Acts[0].act = a;
-                Acts[0].exeOrder = int.MaxValue;
-            }
-
-            ++reservedActCt;
+            throw new ArgumentException("Function passed cannot be null!", nameof(Act));
         }
+
+        OrderedAction oa = new OrderedAction(Act, exeOrder);
+        Acts.Insert(0, oa);
+        orderDirty = exeOrder != int.MaxValue;
     }
 
-    // Adds to the end of the invocation list and raises flag for array sort
-    // when it comes time to execute functions.
-    public void Add(Action a, int exeOrder = int.MaxValue)
+    // Adds to the end of the invocation list
+    public void Add(Action Act, int exeOrder = int.MaxValue)
     {
-        if (canAddActions)
+        if (Act == null)
         {
-            Acts[reservedActCt].exeOrder = exeOrder;
-            Acts[reservedActCt++].act = a;
-            orderDirty = true;
+            throw new ArgumentException("Function passed cannot be null!", nameof(Act));
         }
+
+        OrderedAction oa = new OrderedAction(Act, exeOrder);
+        Acts.Add(oa);
+        orderDirty = exeOrder != int.MaxValue;
     }
 
-    public OrderedEvent(int unityActionCt)
+    public void Add(OrderedAction Oact)
     {
-        Acts = new OrderedAction[unityActionCt];
-        for (int i = 0; i < unityActionCt; ++i) { Acts[i] = new OrderedAction(); }
+        if(Oact == null)
+        {
+            throw new ArgumentException("OrderedAction cannot be null!", nameof(Oact));
+        }
+        if(Oact.act == null)
+        {
+            throw new ArgumentException("OrderedAction function cannot be null!", nameof(Oact.act));
+        }
+
+        Acts.Add(Oact);
+        orderDirty = Oact.exeOrder != int.MaxValue;
     }
-    public OrderedEvent()
-    {
-        Acts = new OrderedAction[8];
-        Acts[0] = new OrderedAction(); Acts[1] = new OrderedAction();
-        Acts[2] = new OrderedAction(); Acts[3] = new OrderedAction();
-        Acts[4] = new OrderedAction(); Acts[5] = new OrderedAction();
-        Acts[6] = new OrderedAction(); Acts[7] = new OrderedAction();
-    }
+
 }
