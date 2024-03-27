@@ -1,4 +1,7 @@
-﻿namespace OrderedEvents
+﻿using System;
+using System.Collections.Generic;
+
+namespace OrderedEvents
 {
     public class OrderedAction<TEventArgs> : IComparable<OrderedAction<TEventArgs>>
     {
