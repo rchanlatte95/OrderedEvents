@@ -1,7 +1,7 @@
 # OrderedEvents
 
 Single-file library that allows you to order event function execution. Currently
-at 192 LOC.
+at 190 LOC.
 
 ### Dependencies
 
