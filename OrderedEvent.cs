@@ -60,10 +60,9 @@ namespace OrderedEvents
             {
                 currAct = OrderedActs[i].BaseAct;
                 if (currAct == null)
-                {
                     throw new NullReferenceException($"OrderedAction cannot be null!");
-                }
-                if (currAct.Equals(target)) { return OrderedActs[i]; }
+
+                if (currAct.Equals(target)) return OrderedActs[i];
             }
             return null;
         }
@@ -77,7 +76,7 @@ namespace OrderedEvents
         public void Raise(object obj, TEventArgs eventArgs)
         {
             if (disabled) return;
-            if (orderDirty) { Sort(); }
+            if (orderDirty) Sort();
 
             OrderedAction<TEventArgs> currAct;
             for (int i = 0, ct = OrderedActs.Count; i < ct; ++i)
@@ -91,9 +90,8 @@ namespace OrderedEvents
         public void Push(OrderedAction<TEventArgs> OrdAct)
         {
             if (OrdAct == null)
-            {
                 throw new NullReferenceException($"OrderedAction cannot be null!");
-            }
+
             OrdAct.Subscription = this;
             OrderedActs.Insert(0, OrdAct);
         }
@@ -101,9 +99,8 @@ namespace OrderedEvents
         public void Add(OrderedAction<TEventArgs> OrdAct)
         {
             if (OrdAct == null)
-            {
                 throw new NullReferenceException($"OrderedAction cannot be null!");
-            }
+
             OrdAct.Subscription = this;
             OrderedActs.Add(OrdAct);
         }
@@ -111,9 +108,8 @@ namespace OrderedEvents
         public void Insert(OrderedAction<TEventArgs> OrdAct)
         {
             if (OrdAct == null)
-            {
                 throw new NullReferenceException($"OrderedAction cannot be null!");
-            }
+
             OrderedActs.Add(OrdAct);
             orderDirty = true;
         }
@@ -131,9 +127,8 @@ namespace OrderedEvents
         public void Push(Action<object, TEventArgs> Act)
         {
             if (Act == null)
-            {
                 throw new NullReferenceException($"Action cannot be null!");
-            }
+
             OrderedActs.Insert(0, new OrderedAction<TEventArgs>(Act, this, OrderedActs[0].ExecutionOrder - 1));
         }
 
@@ -150,9 +145,8 @@ namespace OrderedEvents
         public void Add(Action<object, TEventArgs> Act)
         {
             if (Act == null)
-            {
                 throw new NullReferenceException($"Action cannot be null!");
-            }
+
             OrderedActs.Add(new OrderedAction<TEventArgs>(Act, this));
         }
 
@@ -169,9 +163,8 @@ namespace OrderedEvents
         public void Insert(Action<object, TEventArgs> Act, int desiredOrder)
         {
             if (Act == null)
-            {
                 throw new NullReferenceException($"Action cannot be null!");
-            }
+
             OrderedActs.Add(new OrderedAction<TEventArgs>(Act, this, desiredOrder));
             orderDirty = true;
         }
@@ -179,9 +172,8 @@ namespace OrderedEvents
         public static OrderedEvent<TEventArgs> operator +(OrderedEvent<TEventArgs> lhs, OrderedAction<TEventArgs> rhs)
         {
             if (rhs == null)
-            {
                 throw new NullReferenceException($"OrderedAction cannot be null!");
-            }
+
             lhs.Insert(rhs);
             return lhs;
         }
@@ -189,28 +181,49 @@ namespace OrderedEvents
         public static OrderedEvent<TEventArgs> operator +(OrderedEvent<TEventArgs> lhs, Action<object, TEventArgs> rhs)
         {
             if (rhs == null)
-            {
                 throw new NullReferenceException($"Action cannot be null!");
-            }
+
             lhs.Add(rhs);
             return lhs;
         }
 
         public static OrderedEvent<TEventArgs> operator -(OrderedEvent<TEventArgs> lhs, OrderedAction<TEventArgs> rhs)
         {
-            if (rhs == null) { return lhs; }
+            if (rhs == null) return lhs;
+
             _ = lhs.OrderedActs.Remove(rhs);
             return lhs;
         }
 
         public static OrderedEvent<TEventArgs> operator -(OrderedEvent<TEventArgs> lhs, Action<object, TEventArgs> rhs)
         {
-            if (rhs == null) { return lhs; }
+            if (rhs == null) return lhs;
+
             List<OrderedAction<TEventArgs>> acts = lhs.OrderedActs;
             for (int i = 0, ct = acts.Count; i < ct; ++i)
             {
-                if (rhs.Equals(acts[i].BaseAct)) { acts.RemoveAt(i); break; }
+                if (rhs.Equals(acts[i].BaseAct))
+                {
+                    acts.RemoveAt(i);
+                    break;
+                }
             }
+            return lhs;
+        }
+
+        public static OrderedEvent<TEventArgs> operator +(OrderedEvent<TEventArgs> lhs, OrderedEvent<TEventArgs> rhs)
+        {
+            if (rhs == null)
+                throw new NullReferenceException($"OrderedEvent cannot be null!");
+
+            List<OrderedAction<TEventArgs>> rhsActs = rhs.OrderedActs;
+            if (rhsActs.Count < 1 ||  rhs == lhs)
+                return lhs;
+
+            for(int i = 0, ct = rhsActs.Count; i < ct; ++i)
+                lhs += rhsActs[i];
+
+            lhs.orderDirty = true;
             return lhs;
         }
     }
